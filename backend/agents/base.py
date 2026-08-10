@@ -25,6 +25,7 @@ Two phases per agent:
 from __future__ import annotations
 
 import logging
+import re
 import time
 from pathlib import Path
 from typing import Any, TypeVar
@@ -54,6 +55,35 @@ def load_prompt(name: str) -> str:
     return path.read_text(encoding="utf-8")
 
 
+# Models writing JSON sometimes escape a character twice, so an em dash arrives
+# as the six literal characters — instead of the dash itself. Left alone it
+# reaches the reader as raw escape codes in the middle of a sentence.
+_STRAY_ESCAPE = re.compile(r"\\u([0-9a-fA-F]{4})")
+
+
+def _unescape_text(text: str) -> str:
+    return _STRAY_ESCAPE.sub(lambda m: chr(int(m.group(1), 16)), text)
+
+
+def _unescape_model(model: BaseModel) -> None:
+    """Repair over-escaped unicode anywhere in a parsed output, in place."""
+
+    def fix(value: Any) -> Any:
+        if isinstance(value, str):
+            return _unescape_text(value)
+        if isinstance(value, list):
+            return [fix(v) for v in value]
+        if isinstance(value, BaseModel):
+            _unescape_model(value)
+        return value
+
+    for field in type(model).model_fields:
+        current = getattr(model, field, None)
+        repaired = fix(current)
+        if isinstance(current, (str, list)) and repaired != current:
+            setattr(model, field, repaired)
+
+
 def _client():
     """Build the Anthropic client, applying the TLS fix first.
 
@@ -81,6 +111,7 @@ class Agent:
         model: str | None = None,
         max_tool_calls: int = 8,
         effort: str | None = None,
+        max_output_tokens: int = 16000,
     ) -> None:
         self.name = name
         self.system_prompt = load_prompt(prompt_name)
@@ -88,6 +119,12 @@ class Agent:
         self.model = model or settings.analyst_model
         self.max_tool_calls = max_tool_calls
         self.effort = effort or settings.effort
+        # max_tokens caps thinking *and* output together. At high effort the
+        # reasoning can consume most of a small budget, leaving the structured
+        # JSON to be cut off mid-string -- which surfaces as a parse error, not
+        # as a truncation warning. 16k stays under the SDK's non-streaming
+        # timeout guard while leaving ample room for a long verification report.
+        self.max_output_tokens = max_output_tokens
 
     # ------------------------------------------------------------------ run
 
@@ -135,7 +172,7 @@ class Agent:
         while dispatcher.call_count < self.max_tool_calls:
             response = client.messages.create(
                 model=self.model,
-                max_tokens=8000,
+                max_tokens=self.max_output_tokens,
                 system=self.system_prompt,
                 thinking={"type": "adaptive"},
                 output_config={"effort": self.effort},
@@ -226,22 +263,45 @@ class Agent:
             }
         )
 
-        response = client.messages.parse(
-            model=self.model,
-            max_tokens=8000,
-            system=self.system_prompt,
-            thinking={"type": "adaptive"},
-            output_config={"effort": self.effort},
-            messages=messages,
-            output_format=self.output_model,
-        )
+        try:
+            response = self._parse_call(client, messages)
+        except Exception as exc:
+            # A truncated structured output surfaces as a JSON parse error, which
+            # says nothing about the actual cause. Retry once with less thinking
+            # so more of the budget goes to the output itself.
+            if "json_invalid" not in str(exc) and "Invalid JSON" not in str(exc):
+                raise
+            bus.emit(
+                "error",
+                agent=self.name,
+                message="Structured output was truncated; retrying with lower effort.",
+            )
+            response = self._parse_call(client, messages, effort="medium")
+
+        if getattr(response, "stop_reason", None) == "max_tokens":
+            raise RuntimeError(
+                f"{self.name} ran out of output budget ({self.max_output_tokens} tokens) "
+                "before finishing its report."
+            )
 
         parsed = response.parsed_output
         if parsed is None:
             raise RuntimeError(f"{self.name} returned no parseable structured output")
 
+        _unescape_model(parsed)
         self._warn_on_bad_citations(parsed, registry, bus)
         return parsed
+
+    def _parse_call(self, client: Any, messages: list[dict[str, Any]], effort: str | None = None):
+        return client.messages.parse(
+            model=self.model,
+            max_tokens=self.max_output_tokens,
+            system=self.system_prompt,
+            thinking={"type": "adaptive"},
+            output_config={"effort": effort or self.effort},
+            messages=messages,
+            output_format=self.output_model,
+        )
 
     def _warn_on_bad_citations(
         self, parsed: BaseModel, registry: SourceRegistry, bus: EventBus
