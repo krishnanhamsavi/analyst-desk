@@ -16,7 +16,7 @@ import sqlite3
 import threading
 from contextlib import contextmanager
 from datetime import datetime, timedelta, timezone
-from typing import Any, Iterator
+from typing import Any, Callable, Iterator
 
 from core.config import settings
 
@@ -121,11 +121,23 @@ def clear(tool: str | None = None) -> int:
         return 0
 
 
-def cached(tool: str, key: str, fetch, ttl_hours: int | None = None) -> tuple[Any, bool]:
+def cached(
+    tool: str,
+    key: str,
+    fetch,
+    ttl_hours: int | None = None,
+    should_cache: Callable[[Any], bool] | None = None,
+) -> tuple[Any, bool]:
     """Read-through cache helper.
 
     Returns (payload, from_cache). If DEMO_MODE is on and nothing is cached,
     raises LookupError -- callers turn that into a clean 'no data' ToolResult.
+
+    `should_cache` guards against **poisoning the cache with a failure**. An
+    upstream API that rate-limits us returns an empty payload rather than an
+    error; caching that turns one transient throttle into hours of "no data for
+    this ticker", which looks exactly like a broken tool. By default we only
+    store truthy payloads, so a bad fetch is retried rather than remembered.
     """
     entry = get(tool, key, ttl_hours)
     if entry is not None:
@@ -135,5 +147,8 @@ def cached(tool: str, key: str, fetch, ttl_hours: int | None = None) -> tuple[An
         raise LookupError(f"DEMO_MODE is on and no cached data exists for {tool}:{key}")
 
     payload = fetch()
-    put(tool, key, payload)
+
+    keep = should_cache(payload) if should_cache else bool(payload)
+    if keep:
+        put(tool, key, payload)
     return payload, False

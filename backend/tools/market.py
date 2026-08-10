@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import logging
 import math
+import time
 from datetime import date, timedelta
 from typing import Any
 
@@ -57,6 +58,27 @@ def _clean_ticker(ticker: str) -> str:
     return (ticker or "").strip().upper()
 
 
+def _dividend_yield_pct(info: dict[str, Any]) -> float | None:
+    """Dividend yield as a percent.
+
+    Derived from the annual dividend and the share price where both exist,
+    because that is arithmetic we control. `dividendYield` is the fallback:
+    yfinance reports it already scaled as a percent (NVDA 0.45 means 0.45%),
+    which is easy to mistake for a fraction and inflate a 0.45% yield into 45%.
+    """
+    rate = _num(info.get("dividendRate"))
+    price = _num(info.get("currentPrice")) or _num(info.get("regularMarketPrice"))
+    if rate and price:
+        return round(rate / price * 100, 2)
+
+    reported = _num(info.get("dividendYield"))
+    if reported is None:
+        return None
+    # No listed equity yields more than ~30%; a larger number means the source
+    # changed convention on us, and a wrong number is worse than no number.
+    return reported if reported <= 30 else None
+
+
 # ---------------------------------------------------------------- price history
 
 
@@ -76,15 +98,29 @@ def get_price_history(ticker: str, period: str = "1y") -> ToolResult:
     def fetch() -> dict[str, Any]:
         import yfinance as yf
 
-        hist = yf.Ticker(ticker).history(period=period, auto_adjust=True)
-        if hist is None or hist.empty:
-            return {}
-        hist = hist.dropna(subset=["Close"])
-        return {
-            "dates": [d.strftime("%Y-%m-%d") for d in hist.index],
-            "close": [float(v) for v in hist["Close"]],
-            "volume": [int(v) if v == v else 0 for v in hist["Volume"]],
-        }
+        # Yahoo throttles bursts by returning an *empty frame* rather than an
+        # error, so an empty result is retried rather than believed. Six tools
+        # fetch in parallel at the start of a run, which is exactly the shape
+        # that trips the throttle.
+        last_error: Exception | None = None
+        for attempt in range(3):
+            try:
+                hist = yf.Ticker(ticker).history(period=period, auto_adjust=True)
+                if hist is not None and not hist.empty:
+                    hist = hist.dropna(subset=["Close"])
+                    return {
+                        "dates": [d.strftime("%Y-%m-%d") for d in hist.index],
+                        "close": [float(v) for v in hist["Close"]],
+                        "volume": [int(v) if v == v else 0 for v in hist["Volume"]],
+                    }
+            except Exception as exc:
+                last_error = exc
+            if attempt < 2:
+                time.sleep(1.5 * (attempt + 1))
+
+        if last_error is not None:
+            raise last_error
+        return {}
 
     try:
         raw, from_cache = cache.cached(tool, f"{ticker}|{period}", fetch, ttl_hours=12)
@@ -276,15 +312,7 @@ def get_fundamentals(ticker: str) -> ToolResult:
             "quick_ratio": _num(info.get("quickRatio")),
         },
         "dividend": {
-            # yfinance has reported this both as a fraction (0.0044) and as an
-            # already-scaled percent (0.44) across versions. Anything under 1 is a
-            # fraction -- no listed equity yields under 1% *and* over 100%.
-            "yield_pct": (
-                round(_dividend_yield * 100, 2)
-                if (_dividend_yield := _num(info.get("dividendYield"))) is not None
-                and _dividend_yield < 1
-                else _dividend_yield
-            ),
+            "yield_pct": _dividend_yield_pct(info),
             "payout_ratio_pct": as_pct("payoutRatio"),
         },
         "share_stats": {

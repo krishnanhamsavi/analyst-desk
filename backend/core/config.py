@@ -21,9 +21,13 @@ class Settings(BaseSettings):
     )
 
     # --- LLM ---
+    # Leave the key blank to let the SDK resolve it from the environment.
     anthropic_api_key: str = ""
-    analyst_model: str = "claude-sonnet-5"
+    analyst_model: str = "claude-opus-5"
     moderator_model: str = "claude-opus-5"
+    # Effort controls how much the model thinks and how many tools it reaches for.
+    # "high" suits analysis; drop to "medium" to cut cost, raise for hard cases.
+    effort: str = "high"
 
     # --- Data sources ---
     # SEC EDGAR rejects requests without a descriptive UA containing contact info.

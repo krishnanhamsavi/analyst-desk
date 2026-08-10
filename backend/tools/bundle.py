@@ -38,8 +38,12 @@ log = logging.getLogger(__name__)
 # history we pull and how the prompts weight each dimension.
 HORIZONS: dict[str, dict[str, Any]] = {
     "short": {
+        # 2y even for a short horizon: a trailing 1-year return computed from a
+        # 1-year window lands on the first row of the series, which is the least
+        # reliable point in it. Charts can be sliced down; accuracy can't be
+        # recovered after the fact.
         "label": "Right now / next few weeks",
-        "price_period": "1y",
+        "price_period": "2y",
         "emphasis": "momentum, recent price action, live news catalysts",
     },
     "medium": {
