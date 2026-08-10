@@ -1,0 +1,23 @@
+# --- Phase 1: grounded tool layer ---
+yfinance>=0.2.50
+httpx>=0.27
+pydantic>=2.7
+pydantic-settings>=2.3
+python-dotenv>=1.0
+# Lets Python verify TLS via the OS trust store. Required on machines where
+# antivirus or a corporate proxy intercepts HTTPS -- see core/netsetup.py.
+truststore>=0.9
+
+# --- Phase 2+: agents ---
+anthropic>=0.40
+
+# --- Phase 3+: persistence ---
+SQLAlchemy>=2.0
+
+# --- Phase 4+: API ---
+fastapi>=0.115
+uvicorn[standard]>=0.30
+websockets>=12.0
+
+# --- dev ---
+pytest>=8.0
