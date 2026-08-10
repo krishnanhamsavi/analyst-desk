@@ -114,8 +114,11 @@ class Orchestrator:
         horizon: str = DEFAULT_HORIZON,
         user_view: str | None = None,
         ticker_override: str | None = None,
+        run_id: str | None = None,
     ) -> RunResult:
-        run_id = uuid.uuid4().hex[:8]
+        # The caller may pre-allocate the id so a browser can subscribe to the
+        # event stream before the run has produced anything.
+        run_id = run_id or uuid.uuid4().hex[:8]
         bus = EventBus(run_id, sinks=self._sinks)
         result = RunResult(run_id=run_id, query=query, horizon=horizon, user_view=user_view)
         started = time.perf_counter()
