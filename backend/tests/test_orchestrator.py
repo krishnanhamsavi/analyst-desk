@@ -267,9 +267,28 @@ class TestVerificationApplication:
         assert twice.bull_case[0].point.count("[unverified]") == 1
 
 
-class TestUnescaping:
+class TestTextSanitising:
+    """Guards a bug that silently corrupted a live memo.
+
+    The first version of this helper decoded every \\uXXXX escape, which turned
+    \\u000c into a real form-feed sitting mid-sentence: invisible in logs, and
+    visible to the reader as mangled prose.
+    """
+
     def test_double_escaped_unicode_is_repaired(self):
         assert _unescape_text("a business \\u2014 huge margins") == "a business — huge margins"
+
+    def test_control_characters_never_survive_decoding(self):
+        out = _unescape_text("text \\u000c more")
+        assert not any(ord(c) < 32 and c not in "\n\t" for c in out)
+        assert "\x0c" not in out
+
+    def test_existing_control_characters_are_scrubbed(self):
+        assert "\x0c" not in _unescape_text("already \x0c broken")
+
+    def test_stray_backslash_before_a_letter_is_dropped(self):
+        # A JSON artefact: "\\news" should read as "news", not a newline escape.
+        assert _unescape_text("49% \\news headlines") == "49% news headlines"
 
     def test_repairs_nested_model_fields(self):
         memo = a_memo(bull_point="growth \\u2014 strong")
@@ -279,6 +298,17 @@ class TestUnescaping:
 
     def test_plain_text_is_untouched(self):
         assert _unescape_text("nothing to fix here") == "nothing to fix here"
+
+
+class TestPromptHygiene:
+    def test_every_agent_gets_the_ascii_punctuation_rule(self):
+        """Fancy punctuation is the root cause of mangled JSON output."""
+        from agents.base import Agent
+        from agents.schemas import DirectionalThesis
+
+        agent = Agent("Bull", "bull", DirectionalThesis)
+        assert "plain ASCII punctuation" in agent.system_prompt
+        assert "markdown headings" in agent.system_prompt
 
 
 class TestPersistence:

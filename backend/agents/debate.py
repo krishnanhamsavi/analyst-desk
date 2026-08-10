@@ -87,8 +87,8 @@ def run_debate(
     # No tools here: this round is about reasoning over evidence already on the
     # table, not about fetching more. Letting them re-research would turn a
     # rebuttal into a second opening statement.
-    bull_rebutter = Agent("Bull", "rebuttal", RebuttalSet, max_tool_calls=0)
-    bear_rebutter = Agent("Bear", "rebuttal", RebuttalSet, max_tool_calls=0)
+    bull_rebutter = Agent("Bull", "rebuttal", RebuttalSet, max_tool_calls=0, phase="rebuttal")
+    bear_rebutter = Agent("Bear", "rebuttal", RebuttalSet, max_tool_calls=0, phase="rebuttal")
 
     bull_rebuttal = bull_rebutter.run(
         task=_rebuttal_task("Bull", bull, "Bear", bear, registry),

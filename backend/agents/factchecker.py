@@ -81,6 +81,7 @@ def run_factchecker(
         output_model=VerificationReport,
         model=settings.moderator_model,
         max_tool_calls=0,  # verification against the record, not new research
+        phase="verification",
     )
     report = agent.run(task=task, registry=registry, ticker=ticker, bus=bus)
 

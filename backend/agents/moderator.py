@@ -121,6 +121,7 @@ def run_moderator(
         output_model=ResearchMemo,
         model=settings.moderator_model,
         max_tool_calls=0,  # the moderator judges evidence; it does not gather more
+        phase="synthesis",
     )
     memo = agent.run(
         task="\n".join(task_parts),

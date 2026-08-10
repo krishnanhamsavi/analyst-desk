@@ -44,12 +44,35 @@ interface Props {
   status: string
 }
 
+/**
+ * Agents write markdown in their working notes. Rendering it raw puts `##` and
+ * `**` in the middle of sentences, which reads as broken rather than technical.
+ * We strip the syntax and keep the words.
+ */
+function plainText(markdown: string): string {
+  return markdown
+    .replace(/^#{1,6}\s*/gm, '') // headings
+    .replace(/\*\*(.+?)\*\*/g, '$1') // bold
+    .replace(/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/g, '$1') // italics
+    .replace(/`([^`]+)`/g, '$1') // inline code
+    .replace(/^\s*[-*+]\s+/gm, '• ') // bullets
+    .replace(/^---+$/gm, '') // rules
+    .replace(/\n{2,}/g, '\n')
+    .trim()
+}
+
 /** Turns the raw event stream into one readable line per agent action. */
 function describe(event: DeskEvent): string | null {
   const { type, data } = event
   switch (type) {
     case 'agent_started':
-      return `Reading the briefing pack…`
+      return data.phase === 'rebuttal'
+        ? 'Reading the opposing case, looking for weak points…'
+        : data.phase === 'synthesis'
+          ? 'Weighing both cases and the rebuttals…'
+          : data.phase === 'verification'
+            ? 'Checking every claim against the source records…'
+            : 'Reading the briefing pack…'
     case 'tool_called': {
       const args = data.args && Object.keys(data.args).length
         ? ` (${Object.entries(data.args).map(([k, v]) => `${k}: ${v}`).join(', ')})`
@@ -61,7 +84,7 @@ function describe(event: DeskEvent): string | null {
         ? `Got it${data.refs?.length ? ` — sources ${data.refs.join(', ')}` : ''}`
         : `No data: ${data.error}`
     case 'agent_thinking':
-      return String(data.text || '').trim().slice(0, 400)
+      return plainText(String(data.text || '')).slice(0, 420)
     case 'agent_finished':
       return `Finished — ${data.tool_calls} tool call${data.tool_calls === 1 ? '' : 's'}, ${data.elapsed_s}s`
     case 'error':

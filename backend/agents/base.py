@@ -55,14 +55,43 @@ def load_prompt(name: str) -> str:
     return path.read_text(encoding="utf-8")
 
 
+# Appended to every agent's prompt. Fancy punctuation is the single biggest
+# source of mangled output: models escape it inconsistently inside JSON, and a
+# botched escape doesn't fail loudly -- it silently eats the surrounding words.
+# Asking for plain ASCII removes the whole failure class at the source.
+_OUTPUT_HYGIENE = """
+
+## Writing mechanics
+
+Use plain ASCII punctuation only. Write a hyphen or " - " instead of an em dash,
+straight quotes instead of curly ones, and "..." instead of a single ellipsis
+character. Do not use markdown headings, bold, or bullet markers inside any
+field of your structured output -- those fields are rendered as plain prose, so
+the syntax shows up literally to the reader. Write ordinary sentences.
+"""
+
+
 # Models writing JSON sometimes escape a character twice, so an em dash arrives
-# as the six literal characters — instead of the dash itself. Left alone it
-# reaches the reader as raw escape codes in the middle of a sentence.
-_STRAY_ESCAPE = re.compile(r"\\u([0-9a-fA-F]{4})")
+# as six literal characters instead of the dash itself. Repairing that naively
+# is worse than the disease: blindly decoding every \uXXXX turns  into a
+# real form-feed sitting in the middle of a sentence, which is invisible in logs
+# and corrupts the rendered memo. So we decode only to printable characters, and
+# scrub anything else that slipped through.
+_UNICODE_ESCAPE = re.compile(r"\\u([0-9a-fA-F]{4})")
+_CONTROL_CHARS = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]")
+# A lone backslash before a letter is a JSON artefact, never real prose.
+_STRAY_BACKSLASH = re.compile(r"\\(?=[A-Za-z])")
 
 
 def _unescape_text(text: str) -> str:
-    return _STRAY_ESCAPE.sub(lambda m: chr(int(m.group(1), 16)), text)
+    def decode(match: re.Match[str]) -> str:
+        char = chr(int(match.group(1), 16))
+        return char if char.isprintable() or char in "\n\t" else " "
+
+    cleaned = _UNICODE_ESCAPE.sub(decode, text)
+    cleaned = _CONTROL_CHARS.sub(" ", cleaned)
+    cleaned = _STRAY_BACKSLASH.sub("", cleaned)
+    return re.sub(r"[ \t]{2,}", " ", cleaned).strip()
 
 
 def _unescape_model(model: BaseModel) -> None:
@@ -112,9 +141,13 @@ class Agent:
         max_tool_calls: int = 8,
         effort: str | None = None,
         max_output_tokens: int = 16000,
+        phase: str = "research",
     ) -> None:
         self.name = name
-        self.system_prompt = load_prompt(prompt_name)
+        # An agent appears twice in a run -- once researching, once rebutting.
+        # The UI needs to tell those apart, or the debate looks like a repeat.
+        self.phase = phase
+        self.system_prompt = load_prompt(prompt_name) + _OUTPUT_HYGIENE
         self.output_model = output_model
         self.model = model or settings.analyst_model
         self.max_tool_calls = max_tool_calls
@@ -138,7 +171,13 @@ class Agent:
     ) -> BaseModel:
         """Research, then report. Returns a validated instance of output_model."""
         started = time.perf_counter()
-        bus.emit("agent_started", agent=self.name, model=self.model, effort=self.effort)
+        bus.emit(
+            "agent_started",
+            agent=self.name,
+            model=self.model,
+            effort=self.effort,
+            phase=self.phase,
+        )
 
         client = _client()
         dispatcher = ToolDispatcher(ticker, registry, default_period)
