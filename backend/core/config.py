@@ -43,9 +43,22 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
 
     @property
+    def resolved_cache_dir(self) -> Path:
+        """Cache directory, always anchored to the repo root.
+
+        A relative CACHE_DIR would otherwise resolve against the *current
+        working directory*, so running the CLI from backend/ and the API from
+        the repo root would silently use two different caches.
+        """
+        path = Path(self.cache_dir)
+        if not path.is_absolute():
+            path = REPO_ROOT / path
+        path.mkdir(parents=True, exist_ok=True)
+        return path
+
+    @property
     def cache_db_path(self) -> Path:
-        self.cache_dir.mkdir(parents=True, exist_ok=True)
-        return self.cache_dir / "tool_cache.sqlite3"
+        return self.resolved_cache_dir / "tool_cache.sqlite3"
 
 
 settings = Settings()

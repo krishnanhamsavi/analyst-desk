@@ -8,11 +8,12 @@ __pycache__/
 # Secrets
 .env
 
-# Local data
+# Local data — caches and generated trust bundles are machine-specific
 *.db
 *.sqlite3
 .cache/
-data/cache/
+**/data/cache/
+**/ca_bundle.pem
 
 # Node / frontend
 node_modules/

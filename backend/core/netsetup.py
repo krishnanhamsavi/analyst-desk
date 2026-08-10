@@ -119,7 +119,7 @@ def _build_ca_bundle() -> Path | None:
     if not extra:
         return None
 
-    bundle = settings.cache_dir / "ca_bundle.pem"
+    bundle = settings.resolved_cache_dir / "ca_bundle.pem"
     try:
         base = Path(certifi.where()).read_text(encoding="utf-8")
         bundle.write_text(base + "\n" + "\n".join(extra), encoding="utf-8")
