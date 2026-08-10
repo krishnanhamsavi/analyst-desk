@@ -34,6 +34,7 @@ from pydantic import BaseModel
 
 from core.config import settings
 from core.events import EventBus
+from core.usage import Usage, from_response
 from tools.claude_tools import TOOL_SCHEMAS, SourceRegistry, ToolDispatcher
 
 log = logging.getLogger(__name__)
@@ -158,16 +159,19 @@ class Agent:
         # as a truncation warning. 16k stays under the SDK's non-streaming
         # timeout guard while leaving ample room for a long verification report.
         self.max_output_tokens = max_output_tokens
+        self.usage = Usage()
+        self._system: Any = self.system_prompt
 
     # ------------------------------------------------------------------ run
 
     def run(
         self,
-        task: str,
+        task: str | list[dict[str, Any]],
         registry: SourceRegistry,
         ticker: str,
         bus: EventBus,
         default_period: str = "1y",
+        shared_context: str | None = None,
     ) -> BaseModel:
         """Research, then report. Returns a validated instance of output_model."""
         started = time.perf_counter()
@@ -182,6 +186,25 @@ class Agent:
         client = _client()
         dispatcher = ToolDispatcher(ticker, registry, default_period)
         messages: list[dict[str, Any]] = [{"role": "user", "content": task}]
+        self.usage = Usage()
+
+        # Prompt caching is a *prefix* match over tools -> system -> messages, so
+        # a shared block only pays off if it sits ahead of everything that
+        # differs. Each agent has its own role prompt, which means the shared
+        # evidence has to lead the system prompt rather than the user turn --
+        # otherwise every agent writes its own cache and none of them read.
+        self._system = (
+            [
+                {
+                    "type": "text",
+                    "text": shared_context,
+                    "cache_control": {"type": "ephemeral"},
+                },
+                {"type": "text", "text": self.system_prompt},
+            ]
+            if shared_context
+            else self.system_prompt
+        )
 
         try:
             self._research(client, messages, dispatcher, bus)
@@ -195,8 +218,13 @@ class Agent:
             agent=self.name,
             tool_calls=dispatcher.call_count,
             elapsed_s=round(time.perf_counter() - started, 1),
+            usage=self.usage.as_dict(),
         )
         return result
+
+    def _track(self, response: Any) -> None:
+        """Accumulate what this call cost, so a run can be broken down later."""
+        self.usage.add(from_response(response, self.model))
 
     # ------------------------------------------------------------- phase 1
 
@@ -212,12 +240,13 @@ class Agent:
             response = client.messages.create(
                 model=self.model,
                 max_tokens=self.max_output_tokens,
-                system=self.system_prompt,
+                system=self._system,
                 thinking={"type": "adaptive"},
                 output_config={"effort": self.effort},
                 tools=TOOL_SCHEMAS,
                 messages=messages,
             )
+            self._track(response)
 
             if response.stop_reason == "refusal":
                 detail = getattr(response, "stop_details", None)
@@ -317,6 +346,8 @@ class Agent:
             )
             response = self._parse_call(client, messages, effort="medium")
 
+        self._track(response)
+
         if getattr(response, "stop_reason", None) == "max_tokens":
             raise RuntimeError(
                 f"{self.name} ran out of output budget ({self.max_output_tokens} tokens) "
@@ -335,7 +366,7 @@ class Agent:
         return client.messages.parse(
             model=self.model,
             max_tokens=self.max_output_tokens,
-            system=self.system_prompt,
+            system=self._system,
             thinking={"type": "adaptive"},
             output_config={"effort": effort or self.effort},
             messages=messages,

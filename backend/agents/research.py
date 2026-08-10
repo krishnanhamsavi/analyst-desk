@@ -14,6 +14,7 @@ from __future__ import annotations
 from agents.base import Agent
 from agents.briefing import build_briefing, horizon_period
 from agents.schemas import DirectionalThesis, RiskAssessment
+from core.config import settings
 from core.events import EventBus
 from tools.bundle import EvidenceBundle
 from tools.claude_tools import SourceRegistry
@@ -45,13 +46,14 @@ def _run(
     bus: EventBus,
     user_view: str | None,
 ):
-    briefing = build_briefing(bundle, registry, task, user_view)
+    shared, assignment = build_briefing(bundle, registry, task, user_view)
     return agent.run(
-        task=briefing,
+        task=assignment,
         registry=registry,
         ticker=bundle.ticker,
         bus=bus,
         default_period=horizon_period(bundle),
+        shared_context=shared,
     )
 
 
@@ -61,7 +63,7 @@ def run_bull(
     bus: EventBus,
     user_view: str | None = None,
 ) -> DirectionalThesis:
-    agent = Agent("Bull", "bull", DirectionalThesis, max_tool_calls=6)
+    agent = Agent("Bull", "bull", DirectionalThesis, max_tool_calls=6, effort=settings.research_effort)
     return _run(agent, BULL_TASK, bundle, registry, bus, user_view)  # type: ignore[return-value]
 
 
@@ -71,7 +73,7 @@ def run_bear(
     bus: EventBus,
     user_view: str | None = None,
 ) -> DirectionalThesis:
-    agent = Agent("Bear", "bear", DirectionalThesis, max_tool_calls=6)
+    agent = Agent("Bear", "bear", DirectionalThesis, max_tool_calls=6, effort=settings.research_effort)
     return _run(agent, BEAR_TASK, bundle, registry, bus, user_view)  # type: ignore[return-value]
 
 
@@ -80,7 +82,7 @@ def run_risk(
     registry: SourceRegistry,
     bus: EventBus,
 ) -> RiskAssessment:
-    agent = Agent("Risk", "risk", RiskAssessment, max_tool_calls=5)
+    agent = Agent("Risk", "risk", RiskAssessment, max_tool_calls=5, effort=settings.research_effort)
     # The Risk Manager is deliberately not shown the user's view: an opinion about
     # direction is exactly the thing a risk assessment must not be anchored to.
     return _run(agent, RISK_TASK, bundle, registry, bus, None)  # type: ignore[return-value]

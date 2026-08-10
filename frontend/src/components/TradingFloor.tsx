@@ -188,7 +188,8 @@ export function TradingFloor({ events, company, ticker, status }: Props) {
             {ticker && <span className="font-mono text-base text-accent">{ticker}</span>}
           </h1>
           <p className="text-xs text-muted">
-            The desk is working. Everything below is happening live.
+            Three analysts are researching this independently — they can't see each
+            other's work yet. Takes about 5–8 minutes.
           </p>
         </div>
         <div className="flex items-center gap-1.5">
@@ -238,7 +239,11 @@ export function TradingFloor({ events, company, ticker, status }: Props) {
 
       {debateEvents.length > 0 && (
         <div className="animate-in rounded-xl border border-line bg-surface/60 p-4">
-          <h2 className="mb-2 text-sm font-semibold">The debate</h2>
+          <h2 className="mb-1 text-sm font-semibold">The debate</h2>
+          <p className="mb-2 text-xs text-faint">
+            Now they read each other's case and attack its weakest points. This is where
+            unsupported claims get caught.
+          </p>
           {debateEvents.map((event, i) => (
             <p key={i} className="text-xs text-muted">
               {event.data.note}

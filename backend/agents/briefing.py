@@ -25,45 +25,62 @@ def build_briefing(
     registry: SourceRegistry,
     role_task: str,
     user_view: str | None = None,
-) -> str:
-    """Assemble the opening user message for a research agent."""
+) -> tuple[str, str]:
+    """Assemble the opening user message for a research agent.
+
+    Returns (shared_block, assignment). The shared block is *identical* for
+    every agent in the run, so the caller puts it at the front of the system
+    prompt where it can be cached: the Bull pays to process the evidence once
+    and everyone after it reads back at roughly a tenth of the price.
+    """
     horizon = HORIZONS.get(bundle.horizon, HORIZONS[DEFAULT_HORIZON])
     register_bundle(bundle, registry)
 
-    parts = [
-        f"# Assignment\n{role_task}",
-        "",
-        f"**Company:** {bundle.company_name} ({bundle.ticker})",
-        f"**Horizon:** {horizon['label']} — weight your analysis toward {horizon['emphasis']}.",
-        f"**Data as of:** {bundle.fetched_at.strftime('%Y-%m-%d %H:%M UTC')}",
-        "",
-    ]
+    # Built once per run and reused verbatim. The source catalogue *grows* as
+    # agents fetch extra data, so rebuilding this per agent would change the
+    # bytes and silently defeat the cache -- prefix caching is an exact match.
+    # Agents learn the ids of anything they fetch themselves from the tool
+    # result, so freezing this snapshot costs them nothing.
+    cached_block = getattr(bundle, "_shared_briefing", None)
+    if cached_block is None:
+        cached_block = "\n".join(
+            [
+                f"**Company:** {bundle.company_name} ({bundle.ticker})",
+                f"**Horizon:** {horizon['label']} - weight your analysis toward "
+                f"{horizon['emphasis']}.",
+                f"**Data as of:** {bundle.fetched_at.strftime('%Y-%m-%d %H:%M UTC')}",
+                "",
+                "## The briefing pack",
+                "What the desk has already pulled. Call tools if your argument needs "
+                "something that isn't here.",
+                "",
+                bundle.evidence_brief(),
+                "",
+                "## Citable sources",
+                registry.catalogue(),
+            ]
+        )
+        setattr(bundle, "_shared_briefing", cached_block)
+    shared = cached_block
 
+    assignment = [f"# Your assignment\n{role_task}"]
     if user_view:
-        parts += [
+        assignment += [
+            "",
             "## The user's own view",
             f'The person requesting this analysis said: "{user_view}"',
             "",
             "Address this directly. If the evidence supports them, say so and show "
             "which evidence. If it does not, say that plainly and show why. Do not "
             "flatter the view, and do not dismiss it without evidence.",
-            "",
         ]
-
-    parts += [
-        "## Your briefing pack",
-        "This is what the desk has already pulled. Call tools if your argument "
-        "needs something that isn't here.",
-        "",
-        bundle.evidence_brief(),
-        "",
-        "## Citable sources",
-        registry.catalogue(),
+    assignment += [
         "",
         "Work through the evidence, pull anything else you need, then produce your "
         "structured analysis.",
     ]
-    return "\n".join(parts)
+
+    return shared, "\n".join(assignment)
 
 
 def horizon_period(bundle: EvidenceBundle) -> str:

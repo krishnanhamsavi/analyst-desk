@@ -25,9 +25,20 @@ class Settings(BaseSettings):
     anthropic_api_key: str = ""
     analyst_model: str = "claude-opus-5"
     moderator_model: str = "claude-opus-5"
-    # Effort controls how much the model thinks and how many tools it reaches for.
-    # "high" suits analysis; drop to "medium" to cut cost, raise for hard cases.
-    effort: str = "high"
+    # Effort controls how much the model thinks and how many tools it reaches
+    # for, and it is the largest single cost lever in the system.
+    #
+    # Split deliberately: the research agents mostly read data and fill in a
+    # schema, which "medium" handles well. The Moderator and Fact-Checker are
+    # doing the actual judgement -- refereeing a debate and catching subtle
+    # misrepresentation -- and that is where the extra thinking earns its cost.
+    research_effort: str = "medium"
+    judgment_effort: str = "high"
+
+    @property
+    def effort(self) -> str:
+        """Back-compat default for anything that doesn't specify."""
+        return self.research_effort
 
     # --- Data sources ---
     # SEC EDGAR rejects requests without a descriptive UA containing contact info.

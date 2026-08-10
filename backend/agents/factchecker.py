@@ -80,6 +80,7 @@ def run_factchecker(
         prompt_name="factchecker",
         output_model=VerificationReport,
         model=settings.moderator_model,
+        effort=settings.judgment_effort,
         max_tool_calls=0,  # verification against the record, not new research
         phase="verification",
     )

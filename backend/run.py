@@ -184,6 +184,9 @@ def main(argv: list[str] | None = None) -> int:
 
     print(f"\n{_THIN}")
     print(f"  {result.summary_line()}")
+    if result.usage.by_agent:
+        print()
+        print(result.usage.table())
     print(f"  Saved. Reopen with:  python run.py --history")
 
     if args.json:

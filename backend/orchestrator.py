@@ -38,6 +38,7 @@ from agents.schemas import (
     VerificationReport,
 )
 from core.events import Event, EventBus, EventSink
+from core.usage import RunUsage, Usage
 from tools.bundle import DEFAULT_HORIZON, EvidenceBundle, build_evidence_bundle
 from tools.claude_tools import SourceRegistry
 from tools.resolver import resolve_ticker
@@ -80,6 +81,7 @@ class RunResult:
     verification: VerificationReport | None = None
 
     events: list[Event] = field(default_factory=list)
+    usage: RunUsage = field(default_factory=RunUsage)
     degraded: list[str] = field(default_factory=list)
     error: str | None = None
     elapsed_s: float = 0.0
@@ -98,7 +100,8 @@ class RunResult:
         )
         return (
             f"run {self.run_id}: {self.ticker} memo ready in {self.elapsed_s:.0f}s "
-            f"(confidence={self.memo.confidence}, {flagged} claim(s) flagged)"
+            f"(confidence={self.memo.confidence}, {flagged} claim(s) flagged, "
+            f"${self.usage.total.cost_usd:.3f})"
         )
 
 
@@ -145,6 +148,20 @@ class Orchestrator:
 
         result.elapsed_s = time.perf_counter() - started
         result.events = bus.replay()
+        for event in result.events:
+            if event.type == "agent_finished" and event.data.get("usage"):
+                raw = event.data["usage"]
+                result.usage.record(
+                    event.agent or "unknown",
+                    Usage(
+                        input_tokens=raw.get("input_tokens", 0),
+                        output_tokens=raw.get("output_tokens", 0),
+                        cache_read_tokens=raw.get("cache_read_tokens", 0),
+                        cache_write_tokens=raw.get("cache_write_tokens", 0),
+                        calls=raw.get("calls", 0),
+                        cost_usd=raw.get("cost_usd", 0.0),
+                    ),
+                )
         bus.emit(
             "run_finished",
             stage=result.stage.value,

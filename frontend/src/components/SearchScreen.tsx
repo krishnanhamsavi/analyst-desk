@@ -70,18 +70,50 @@ export function SearchScreen({ onStart, history, onOpenRun, busy }: Props) {
 
   return (
     <div className="relative mx-auto flex min-h-full max-w-4xl flex-col justify-center px-6 py-16">
-      <header className="mb-10 text-center">
+      <header className="mb-8 text-center">
         <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-line bg-surface px-3 py-1 text-[11px] tracking-widest text-muted uppercase">
           <span className="h-1.5 w-1.5 rounded-full bg-bull" />
           Multi-agent equity research
         </div>
         <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">Analyst Desk</h1>
-        <p className="mx-auto mt-3 max-w-xl text-[15px] leading-relaxed text-muted">
-          A bull, a bear and a risk manager research a company independently, then argue
-          it out. A senior analyst writes the verdict — and an independent checker verifies
-          every claim against the source data.
+        <p className="mx-auto mt-3 max-w-2xl text-[15px] leading-relaxed text-muted">
+          Every article about a stock is either hype or doom. This gives you{' '}
+          <span className="text-text">both sides argued properly</span> — then checks
+          whether either side actually told you the truth.
         </p>
       </header>
+
+      {/* A first-time visitor needs to know what this is before being asked to
+          commit eight minutes to it. Three steps, plain language, no jargon. */}
+      <div className="mb-8 grid gap-3 sm:grid-cols-3">
+        {[
+          {
+            n: '1',
+            title: 'You name a company',
+            body: 'Type "Apple" — no ticker symbols needed — and say whether you care about the next few weeks or the next few years.',
+          },
+          {
+            n: '2',
+            title: 'Three analysts dig in',
+            body: 'One argues the stock will do well, one argues it won\'t, and one maps what could go wrong either way. They use real market data and SEC filings, not opinions.',
+          },
+          {
+            n: '3',
+            title: 'They argue, then get checked',
+            body: 'Each attacks the other\'s weakest points. A senior analyst writes the verdict — and a separate checker verifies every number against its source.',
+          },
+        ].map((step) => (
+          <div key={step.n} className="rounded-xl border border-line bg-surface/40 p-4">
+            <div className="mb-1.5 flex items-center gap-2">
+              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-accent/15 text-[11px] font-semibold text-accent">
+                {step.n}
+              </span>
+              <span className="text-sm font-medium">{step.title}</span>
+            </div>
+            <p className="text-xs leading-relaxed text-muted">{step.body}</p>
+          </div>
+        ))}
+      </div>
 
       <div className="rounded-2xl border border-line bg-surface/70 p-6 shadow-2xl backdrop-blur">
         <label className="mb-2 block text-xs font-medium tracking-wide text-muted uppercase">

@@ -14,6 +14,7 @@ from __future__ import annotations
 
 from agents.base import Agent
 from agents.schemas import DirectionalThesis, RebuttalSet
+from core.config import settings
 from core.events import EventBus
 from tools.claude_tools import SourceRegistry
 
@@ -87,8 +88,8 @@ def run_debate(
     # No tools here: this round is about reasoning over evidence already on the
     # table, not about fetching more. Letting them re-research would turn a
     # rebuttal into a second opening statement.
-    bull_rebutter = Agent("Bull", "rebuttal", RebuttalSet, max_tool_calls=0, phase="rebuttal")
-    bear_rebutter = Agent("Bear", "rebuttal", RebuttalSet, max_tool_calls=0, phase="rebuttal")
+    bull_rebutter = Agent("Bull", "rebuttal", RebuttalSet, max_tool_calls=0, phase="rebuttal", effort=settings.research_effort)
+    bear_rebutter = Agent("Bear", "rebuttal", RebuttalSet, max_tool_calls=0, phase="rebuttal", effort=settings.research_effort)
 
     bull_rebuttal = bull_rebutter.run(
         task=_rebuttal_task("Bull", bull, "Bear", bear, registry),

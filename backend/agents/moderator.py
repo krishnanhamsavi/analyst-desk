@@ -120,6 +120,7 @@ def run_moderator(
         prompt_name="moderator",
         output_model=ResearchMemo,
         model=settings.moderator_model,
+        effort=settings.judgment_effort,
         max_tool_calls=0,  # the moderator judges evidence; it does not gather more
         phase="synthesis",
     )
