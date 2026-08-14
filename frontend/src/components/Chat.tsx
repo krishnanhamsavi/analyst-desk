@@ -64,7 +64,7 @@ export function Chat({
         const next = [...prev]
         next[next.length - 1] = {
           role: 'assistant',
-          content: `Sorry — I couldn't answer that. ${(error as Error).message}`,
+          content: `Sorry, I couldn't answer that. ${(error as Error).message}`,
         }
         return next
       })

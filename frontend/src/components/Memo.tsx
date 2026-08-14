@@ -23,7 +23,7 @@ function Gauge({ level, reason }: { level: keyof typeof CONFIDENCE; reason: stri
   return (
     <div className="rounded-xl border border-line bg-surface/60 p-4">
       <div className="mb-2 flex items-baseline justify-between">
-        <span className="text-xs tracking-wide text-muted uppercase">How confident</span>
+        <span className="text-xs tracking-wide text-muted uppercase" title="How much the evidence settles the question, not how good the company is">How confident</span>
         <span className="text-sm font-semibold" style={{ color: config.color }}>
           {config.label}
         </span>
@@ -64,7 +64,7 @@ function PriceChart({ chart, ticker }: { chart: RunPayload['chart']; ticker: str
             <span>
               52-week range{' '}
               <span className="font-mono text-muted">
-                {chart.range_52w.low} – {chart.range_52w.high}
+                {chart.range_52w.low} to {chart.range_52w.high}
               </span>
             </span>
           )}
@@ -231,7 +231,7 @@ function VerificationPanel({ report }: { report: RunPayload['verification'] }) {
   return (
     <section className={`rounded-xl border ${tone.border} ${tone.bg} p-4`}>
       <div className="flex items-center justify-between">
-        <h3 className={`text-sm font-semibold ${tone.text}`}>Verification — {tone.label}</h3>
+        <h3 className={`text-sm font-semibold ${tone.text}`}>Verification, {tone.label}</h3>
         <span className="text-xs text-muted">
           {report.findings.length} claims checked · {flagged.length} flagged
         </span>
@@ -272,7 +272,7 @@ function VerificationPanel({ report }: { report: RunPayload['verification'] }) {
         </>
       )}
       <p className="mt-3 text-[11px] leading-relaxed text-faint">
-        The checker never saw the debate — only the memo and the raw source records, so it
+        The checker never saw the debate, only the memo and the raw source records, so it
         can't be persuaded by the argument it is checking.
       </p>
     </section>
@@ -289,7 +289,8 @@ export function Memo({ run, beginner }: { run: RunPayload; beginner: boolean }) 
       <PriceChart chart={run.chart} ticker={run.ticker} />
 
       <section className="rounded-xl border border-line bg-surface/60 p-5">
-        <h2 className="mb-2 text-xs tracking-wide text-muted uppercase">In plain English</h2>
+        <h2 className="text-xs tracking-wide text-muted uppercase">In plain English</h2>
+        <p className="mb-3 text-[11px] text-faint">The whole analysis in a few sentences. If you read nothing else, read this.</p>
         <p className="text-[15px] leading-relaxed">
           <AutoTerms text={memo.plain_summary} />
         </p>
@@ -298,9 +299,10 @@ export function Memo({ run, beginner }: { run: RunPayload; beginner: boolean }) 
       <Gauge level={memo.confidence} reason={memo.confidence_reasoning} />
 
       <section className="rounded-xl border border-warn/30 bg-warn/5 p-5">
-        <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-warn">
+        <h2 className="flex items-center gap-2 text-sm font-semibold text-warn">
           <span>⚠</span> Key risks
         </h2>
+        <p className="mb-3 text-[11px] text-faint">What the risk manager thinks could hurt you, whichever way the price goes. Shown early on purpose.</p>
         <ul className="space-y-2.5">
           {memo.key_risks.map((risk, i) => (
             <li key={i} className="text-sm leading-relaxed text-text">
@@ -312,7 +314,8 @@ export function Memo({ run, beginner }: { run: RunPayload; beginner: boolean }) 
 
       <div className="grid gap-4 lg:grid-cols-2">
         <section className="rounded-xl border border-line bg-surface/60 p-5">
-          <h2 className="mb-1 text-sm font-semibold text-bull">The case for</h2>
+          <h2 className="text-sm font-semibold text-bull">The case for</h2>
+          <p className="mb-2 text-[11px] text-faint">The bull analyst's strongest points. Click a blue tag to see the exact data behind it.</p>
           <ul className="divide-y divide-line-soft">
             {memo.bull_case.map((point, i) => (
               <PointRow key={i} point={point} sources={sources} side="bull" />
@@ -321,7 +324,8 @@ export function Memo({ run, beginner }: { run: RunPayload; beginner: boolean }) 
         </section>
 
         <section className="rounded-xl border border-line bg-surface/60 p-5">
-          <h2 className="mb-1 text-sm font-semibold text-bear">The case against</h2>
+          <h2 className="text-sm font-semibold text-bear">The case against</h2>
+          <p className="mb-2 text-[11px] text-faint">The bear analyst's strongest points, argued just as hard from the same data.</p>
           <ul className="divide-y divide-line-soft">
             {memo.bear_case.map((point, i) => (
               <PointRow key={i} point={point} sources={sources} side="bear" />
@@ -333,7 +337,7 @@ export function Memo({ run, beginner }: { run: RunPayload; beginner: boolean }) 
       <section className="rounded-xl border border-line bg-surface/60 p-5">
         <h2 className="mb-1 text-sm font-semibold">What would have to be true</h2>
         <p className="mb-4 text-xs text-faint">
-          The conditions each side needs. These are checkable later — that's the point.
+          The conditions each side needs. These are checkable later, that's the point.
         </p>
         <div className="grid gap-5 sm:grid-cols-2">
           <div>
@@ -365,7 +369,8 @@ export function Memo({ run, beginner }: { run: RunPayload; beginner: boolean }) 
 
       {!beginner && (
         <section className="animate-in rounded-xl border border-line bg-surface/60 p-5">
-          <h2 className="mb-2 text-sm font-semibold">How the debate went</h2>
+          <h2 className="text-sm font-semibold">How the debate went</h2>
+          <p className="mb-2 text-[11px] text-faint">Which arguments survived once each side attacked the other.</p>
           <p className="text-sm leading-relaxed text-muted">
             <AutoTerms text={memo.how_the_debate_went} />
           </p>
@@ -390,7 +395,7 @@ export function Memo({ run, beginner }: { run: RunPayload; beginner: boolean }) 
         </h2>
         <p className="text-[15px] leading-relaxed">{memo.what_this_means_for_you}</p>
         <p className="mt-3 border-t border-line pt-3 text-[11px] text-faint">
-          Research to help you think — not advice telling you what to do. No buy, sell or
+          Research to help you think, not advice telling you what to do. No buy, sell or
           hold recommendation is given or implied.
         </p>
       </section>

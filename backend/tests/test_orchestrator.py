@@ -275,8 +275,18 @@ class TestTextSanitising:
     visible to the reader as mangled prose.
     """
 
-    def test_double_escaped_unicode_is_repaired(self):
-        assert _unescape_text("a business \\u2014 huge margins") == "a business — huge margins"
+    def test_escaped_dash_is_decoded_then_removed(self):
+        """Dashes read as AI writing, so they are decoded and then replaced."""
+        assert _unescape_text("a business \\u2014 huge margins") == "a business, huge margins"
+
+    def test_plain_dashes_become_commas(self):
+        assert _unescape_text("Revenue grew - earnings grew") == "Revenue grew, earnings grew"
+
+    def test_compound_words_keep_their_hyphen(self):
+        assert _unescape_text("year-on-year growth") == "year-on-year growth"
+
+    def test_dash_after_punctuation_does_not_double_up(self):
+        assert _unescape_text("It fell, - then recovered.") == "It fell, then recovered."
 
     def test_control_characters_never_survive_decoding(self):
         out = _unescape_text("text \\u000c more")
@@ -293,7 +303,7 @@ class TestTextSanitising:
     def test_repairs_nested_model_fields(self):
         memo = a_memo(bull_point="growth \\u2014 strong")
         _unescape_model(memo)
-        assert "—" in memo.bull_case[0].point
+        assert memo.bull_case[0].point == "growth, strong"
         assert "\\u" not in memo.bull_case[0].point
 
     def test_plain_text_is_untouched(self):
@@ -307,7 +317,7 @@ class TestPromptHygiene:
         from agents.schemas import DirectionalThesis
 
         agent = Agent("Bull", "bull", DirectionalThesis)
-        assert "plain ASCII punctuation" in agent.system_prompt
+        assert "Never use dashes of any kind" in agent.system_prompt
         assert "markdown headings" in agent.system_prompt
 
 

@@ -64,11 +64,18 @@ _OUTPUT_HYGIENE = """
 
 ## Writing mechanics
 
-Use plain ASCII punctuation only. Write a hyphen or " - " instead of an em dash,
-straight quotes instead of curly ones, and "..." instead of a single ellipsis
-character. Do not use markdown headings, bold, or bullet markers inside any
-field of your structured output -- those fields are rendered as plain prose, so
-the syntax shows up literally to the reader. Write ordinary sentences.
+**Never use dashes of any kind as punctuation.** No em dashes, no en dashes, and
+no hyphen standing in for one. Where you would reach for a dash, use a comma, a
+full stop, or the word "which" or "because". Two short sentences almost always
+read better than one sentence held together by a dash. Hyphens inside a genuine
+compound word such as "year-on-year" are fine.
+
+Use straight quotes rather than curly ones, and write "..." rather than a single
+ellipsis character.
+
+Do not use markdown headings, bold, or bullet markers inside any field of your
+structured output. Those fields are rendered as plain prose, so the syntax shows
+up literally to the reader. Write ordinary sentences.
 """
 
 
@@ -84,6 +91,26 @@ _CONTROL_CHARS = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]")
 _STRAY_BACKSLASH = re.compile(r"\\(?=[A-Za-z])")
 
 
+# Dashes used as punctuation make AI writing instantly recognisable, and they
+# are the escaping hazard above. The prompt asks models not to use them; this is
+# the net for when one does anyway. A hyphen inside a compound word such as
+# "year-on-year" has no surrounding spaces, so it survives untouched.
+_DASH_CLAUSE = re.compile(r"\s*[‒-―−]\s*|\s+-{1,2}\s+")
+_LEADING_DASH = re.compile(r"^\s*[-‒-―−]\s+", re.MULTILINE)
+
+
+def _strip_dashes(text: str) -> str:
+    """Replace dash-as-punctuation with a comma, keeping the sentence readable."""
+    text = _LEADING_DASH.sub("", text)
+
+    def replace(match: re.Match[str]) -> str:
+        before = text[: match.start()].rstrip()
+        # A dash after existing punctuation just becomes a space.
+        return " " if before.endswith((",", ".", ":", ";", "?", "!")) else ", "
+
+    return _DASH_CLAUSE.sub(replace, text)
+
+
 def _unescape_text(text: str) -> str:
     def decode(match: re.Match[str]) -> str:
         char = chr(int(match.group(1), 16))
@@ -92,6 +119,8 @@ def _unescape_text(text: str) -> str:
     cleaned = _UNICODE_ESCAPE.sub(decode, text)
     cleaned = _CONTROL_CHARS.sub(" ", cleaned)
     cleaned = _STRAY_BACKSLASH.sub("", cleaned)
+    cleaned = _strip_dashes(cleaned)
+    cleaned = re.sub(r",\s*,", ",", cleaned)
     return re.sub(r"[ \t]{2,}", " ", cleaned).strip()
 
 

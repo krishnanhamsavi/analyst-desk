@@ -14,7 +14,7 @@ const AGENTS = [
   {
     key: 'Bull',
     label: 'The Bull',
-    role: 'Argues the case for',
+    role: 'Looks for reasons this stock does well',
     accent: 'text-bull',
     ring: 'border-bull/30',
     glow: 'bg-bull',
@@ -22,7 +22,7 @@ const AGENTS = [
   {
     key: 'Bear',
     label: 'The Bear',
-    role: 'Argues the case against',
+    role: 'Looks for reasons it disappoints',
     accent: 'text-bear',
     ring: 'border-bear/30',
     glow: 'bg-bear',
@@ -30,7 +30,7 @@ const AGENTS = [
   {
     key: 'Risk',
     label: 'Risk Manager',
-    role: 'Maps what could go wrong',
+    role: 'Ignores direction, maps what could hurt you',
     accent: 'text-warn',
     ring: 'border-warn/30',
     glow: 'bg-warn',
@@ -81,12 +81,12 @@ function describe(event: DeskEvent): string | null {
     }
     case 'tool_result':
       return data.ok
-        ? `Got it${data.refs?.length ? ` — sources ${data.refs.join(', ')}` : ''}`
+        ? `Got it${data.refs?.length ? `, sources ${data.refs.join(', ')}` : ''}`
         : `No data: ${data.error}`
     case 'agent_thinking':
       return plainText(String(data.text || '')).slice(0, 420)
     case 'agent_finished':
-      return `Finished — ${data.tool_calls} tool call${data.tool_calls === 1 ? '' : 's'}, ${data.elapsed_s}s`
+      return `Finished, ${data.tool_calls} tool call${data.tool_calls === 1 ? '' : 's'}, ${data.elapsed_s}s`
     case 'error':
       return `Problem: ${data.message}`
     default:
@@ -188,8 +188,8 @@ export function TradingFloor({ events, company, ticker, status }: Props) {
             {ticker && <span className="font-mono text-base text-accent">{ticker}</span>}
           </h1>
           <p className="text-xs text-muted">
-            Three analysts are researching this independently — they can't see each
-            other's work yet. Takes about 5–8 minutes.
+            Three analysts are researching this independently, they can't see each
+            other's work yet. Takes about 5-8 minutes.
           </p>
         </div>
         <div className="flex items-center gap-1.5">
@@ -249,7 +249,7 @@ export function TradingFloor({ events, company, ticker, status }: Props) {
               {event.data.note}
               {event.data.bull_critiques !== undefined && (
                 <>
-                  {' — '}
+                  {', '}
                   <span className="text-bull">{event.data.bull_critiques} challenges from the Bull</span>
                   {', '}
                   <span className="text-bear">{event.data.bear_critiques} from the Bear</span>
@@ -269,8 +269,8 @@ export function TradingFloor({ events, company, ticker, status }: Props) {
       {(moderatorEvents.length > 0 || checkerEvents.length > 0) && (
         <div className="grid animate-in gap-3 sm:grid-cols-2">
           {[
-            { label: 'Moderator', sub: 'weighing both cases', list: moderatorEvents },
-            { label: 'Fact-Checker', sub: 'verifying every claim', list: checkerEvents },
+            { label: 'Moderator', sub: 'decides which arguments held up, then writes the memo', list: moderatorEvents },
+            { label: 'Fact-Checker', sub: 'never saw the debate, only checks numbers against sources', list: checkerEvents },
           ]
             .filter((panel) => panel.list.length > 0)
             .map((panel) => {

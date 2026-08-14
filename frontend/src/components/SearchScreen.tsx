@@ -13,13 +13,13 @@ const HORIZONS = [
   },
   {
     value: 'medium',
-    label: '6–12 months',
+    label: '6-12 months',
     sub: 'the default',
     hint: 'Balances the business fundamentals against current momentum.',
   },
   {
     value: 'long',
-    label: '3–5 years',
+    label: '3-5 years',
     sub: 'long term',
     hint: 'Business quality and competitive position dominate. Short-term noise is ignored.',
   },
@@ -78,7 +78,7 @@ export function SearchScreen({ onStart, history, onOpenRun, busy }: Props) {
         <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">Analyst Desk</h1>
         <p className="mx-auto mt-3 max-w-2xl text-[15px] leading-relaxed text-muted">
           Every article about a stock is either hype or doom. This gives you{' '}
-          <span className="text-text">both sides argued properly</span> — then checks
+          <span className="text-text">both sides argued properly</span>, then checks
           whether either side actually told you the truth.
         </p>
       </header>
@@ -90,7 +90,7 @@ export function SearchScreen({ onStart, history, onOpenRun, busy }: Props) {
           {
             n: '1',
             title: 'You name a company',
-            body: 'Type "Apple" — no ticker symbols needed — and say whether you care about the next few weeks or the next few years.',
+            body: 'Type "Apple", no ticker symbols needed, and say whether you care about the next few weeks or the next few years.',
           },
           {
             n: '2',
@@ -100,7 +100,7 @@ export function SearchScreen({ onStart, history, onOpenRun, busy }: Props) {
           {
             n: '3',
             title: 'They argue, then get checked',
-            body: 'Each attacks the other\'s weakest points. A senior analyst writes the verdict — and a separate checker verifies every number against its source.',
+            body: 'Each attacks the other\'s weakest points. A senior analyst writes the verdict, and a separate checker verifies every number against its source.',
           },
         ].map((step) => (
           <div key={step.n} className="rounded-xl border border-line bg-surface/40 p-4">
@@ -176,7 +176,7 @@ export function SearchScreen({ onStart, history, onOpenRun, busy }: Props) {
 
         <div className="mt-6">
           <label className="mb-2 block text-xs font-medium tracking-wide text-muted uppercase">
-            Time horizon — this changes how the agents argue
+            Time horizon, this changes how the agents argue
           </label>
           <div className="grid gap-2 sm:grid-cols-3">
             {HORIZONS.map((option) => (
@@ -211,7 +211,7 @@ export function SearchScreen({ onStart, history, onOpenRun, busy }: Props) {
           ) : (
             <div className="animate-in">
               <label className="mb-2 block text-xs font-medium tracking-wide text-muted uppercase">
-                Your own take — the agents will test it against the evidence
+                Your own take, the agents will test it against the evidence
               </label>
               <textarea
                 value={view}
@@ -235,7 +235,7 @@ export function SearchScreen({ onStart, history, onOpenRun, busy }: Props) {
           {busy ? 'Running…' : 'Run the analysis'}
         </button>
         <p className="mt-2.5 text-center text-xs text-faint">
-          Takes about 5–8 minutes. You can watch the agents work.
+          Takes about 5-8 minutes. You can watch the agents work.
         </p>
       </div>
 
@@ -251,7 +251,7 @@ export function SearchScreen({ onStart, history, onOpenRun, busy }: Props) {
                 onClick={() => onOpenRun(row.run_id)}
                 className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm transition hover:bg-surface-2"
               >
-                <span className="w-14 font-mono text-accent">{row.ticker ?? '—'}</span>
+                <span className="w-14 font-mono text-accent">{row.ticker ?? ''}</span>
                 <span className="flex-1 truncate text-muted">{row.company_name ?? row.run_id}</span>
                 {row.claims_flagged ? (
                   <span className="rounded bg-warn/15 px-1.5 py-0.5 text-[11px] text-warn">
@@ -269,7 +269,7 @@ export function SearchScreen({ onStart, history, onOpenRun, busy }: Props) {
       )}
 
       <p className="mt-8 text-center text-xs leading-relaxed text-faint">
-        Research to help you think — not advice telling you what to do.
+        Research to help you think, not advice telling you what to do.
         <br />
         No buy, sell or hold recommendations are ever produced.
       </p>
