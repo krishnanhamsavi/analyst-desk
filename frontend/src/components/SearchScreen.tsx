@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { api } from '../api'
+import { api, DEMO_MODE } from '../api'
 import type { HistoryRow, Resolution } from '../types'
 
 const EXAMPLES = ['Apple', 'Nvidia', 'Tesla', 'Coca-Cola', 'Microsoft']
@@ -89,8 +89,21 @@ export function SearchScreen({ onStart, history, onOpenRun, busy }: Props) {
 
   const canRun = query.trim().length > 0 && !busy
 
+  // In demo mode only the exported companies exist, so offer those instead of
+  // inviting someone to type a name that will not work.
+  const examples = DEMO_MODE
+    ? history.map((h) => h.company_name ?? h.ticker ?? '').filter(Boolean).slice(0, 5)
+    : EXAMPLES
+
   return (
     <div className="relative">
+      {DEMO_MODE && (
+        <div className="border-b border-accent/20 bg-accent/[0.07] px-6 py-2.5 text-center text-xs text-muted">
+          <span className="font-medium text-accent">Live demo.</span> These are real
+          recorded runs, replayed exactly as they happened, so anyone can watch the
+          desk work without spending API credit. Clone the repo to analyse any company.
+        </div>
+      )}
       {/* ---------------------------------------------------------- hero */}
       <div className="relative overflow-hidden">
         <div
@@ -130,7 +143,7 @@ export function SearchScreen({ onStart, history, onOpenRun, busy }: Props) {
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && canRun && onStart(query.trim(), horizon, view.trim() || null)}
-                  placeholder="Type any company. Apple, Nvidia, your employer..."
+                  placeholder={DEMO_MODE ? "Pick one of the companies below" : "Type any company. Apple, Nvidia, your employer..."}
                   className="w-full rounded-xl border border-line bg-ink px-4 py-4 text-lg outline-none transition placeholder:text-faint focus:border-accent/60 focus:ring-4 focus:ring-accent/10"
                 />
                 {checking && (
@@ -168,7 +181,7 @@ export function SearchScreen({ onStart, history, onOpenRun, busy }: Props) {
 
               <div className="mt-3 flex flex-wrap items-center gap-1.5 text-xs">
                 <span className="text-faint">Try</span>
-                {EXAMPLES.map((name) => (
+                {examples.map((name) => (
                   <button
                     key={name}
                     onClick={() => setQuery(name)}

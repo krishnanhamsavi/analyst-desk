@@ -1,0 +1,62 @@
+[
+  {
+    "run_id": "c35f3e77",
+    "ticker": "KO",
+    "company_name": "The Coca-Cola Company",
+    "horizon": "medium",
+    "confidence": "moderate",
+    "verification_verdict": "significant_issues",
+    "claims_flagged": 8,
+    "created_at": "2026-08-16T18:24:54.074536",
+    "elapsed_s": 395.93,
+    "user_view": null
+  },
+  {
+    "run_id": "8502c5b6",
+    "ticker": "SNDK",
+    "company_name": "Sandisk Corp",
+    "horizon": "short",
+    "confidence": "low",
+    "verification_verdict": "significant_issues",
+    "claims_flagged": 6,
+    "created_at": "2026-08-10T17:35:54.962733",
+    "elapsed_s": 491.74,
+    "user_view": null
+  },
+  {
+    "run_id": "5e654a4f",
+    "ticker": "NVDA",
+    "company_name": "NVIDIA Corporation",
+    "horizon": "short",
+    "confidence": "moderate",
+    "verification_verdict": "significant_issues",
+    "claims_flagged": 4,
+    "created_at": "2026-08-16T20:52:07.386249",
+    "elapsed_s": 334.16,
+    "user_view": null
+  },
+  {
+    "run_id": "3d1ab418",
+    "ticker": "MSFT",
+    "company_name": "Microsoft Corporation",
+    "horizon": "medium",
+    "confidence": "moderate",
+    "verification_verdict": "significant_issues",
+    "claims_flagged": 4,
+    "created_at": "2026-08-10T06:20:29.523627",
+    "elapsed_s": 417.16,
+    "user_view": null
+  },
+  {
+    "run_id": "ba0c7980",
+    "ticker": "WDC",
+    "company_name": "Western Digital Corporation",
+    "horizon": "medium",
+    "confidence": "moderate",
+    "verification_verdict": "significant_issues",
+    "claims_flagged": 3,
+    "created_at": "2026-08-16T21:25:50.333021",
+    "elapsed_s": 375.92,
+    "user_view": null
+  }
+]
