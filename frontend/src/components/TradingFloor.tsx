@@ -2,12 +2,12 @@ import { useEffect, useMemo, useRef } from 'react'
 import type { DeskEvent } from '../types'
 
 const STAGES = [
-  { key: 'resolve', label: 'Identify' },
-  { key: 'gather', label: 'Gather data' },
-  { key: 'research', label: 'Research' },
-  { key: 'debate', label: 'Debate' },
-  { key: 'synthesize', label: 'Synthesise' },
-  { key: 'verify', label: 'Verify' },
+  { key: 'resolve', label: 'Identify', note: 'Finding the right company' },
+  { key: 'gather', label: 'Gather', note: 'Reading filings, prices and peers' },
+  { key: 'research', label: 'Research', note: 'Both analysts building their case' },
+  { key: 'debate', label: 'Debate', note: 'Each attacking the other' },
+  { key: 'synthesize', label: 'Decide', note: 'Weighing what survived' },
+  { key: 'verify', label: 'Verify', note: 'Checking every number' },
 ]
 
 const AGENTS = [
@@ -180,25 +180,28 @@ export function TradingFloor({ events, company, ticker, status }: Props) {
             {ticker && <span className="font-mono text-base text-accent">{ticker}</span>}
           </h1>
           <p className="text-xs text-muted">
-            Two analysts are researching this independently, they cannot see each
-            other's work yet. Takes about 5 minutes.
+            {STAGES[stageIndex]?.note ?? 'Working'}
+            <span className="text-faint"> · about 5 minutes in total</span>
           </p>
         </div>
         <div className="flex items-center gap-1.5">
           {STAGES.map((s, i) => (
             <div key={s.key} className="flex items-center gap-1.5">
               <div
+                title={s.note}
                 className={`rounded-md px-2.5 py-1 text-[11px] transition ${
                   i < stageIndex
                     ? 'bg-bull/10 text-bull'
                     : i === stageIndex
-                      ? 'bg-accent/15 text-accent'
+                      ? 'bg-accent/20 text-accent ring-1 ring-accent/30'
                       : 'text-faint'
                 }`}
               >
                 {s.label}
               </div>
-              {i < STAGES.length - 1 && <div className="h-px w-3 bg-line" />}
+              {i < STAGES.length - 1 && (
+                <div className={`h-px w-3 ${i < stageIndex ? 'bg-bull/40' : 'bg-line'}`} />
+              )}
             </div>
           ))}
         </div>
