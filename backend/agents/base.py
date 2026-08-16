@@ -236,7 +236,13 @@ class Agent:
         )
 
         try:
-            self._research(client, messages, dispatcher, bus)
+            # An agent with no tool budget has nothing to research, so the
+            # exploratory call would just re-read the same context and throw the
+            # answer away. Skipping it removes roughly a third of the calls in a
+            # run: the Moderator, the Fact-Checker and both rebuttals never call
+            # tools by design.
+            if self.max_tool_calls > 0:
+                self._research(client, messages, dispatcher, bus)
             result = self._report(client, messages, registry, bus)
         except Exception as exc:
             bus.emit("error", agent=self.name, message=f"{type(exc).__name__}: {exc}")

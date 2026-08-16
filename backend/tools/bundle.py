@@ -31,6 +31,8 @@ from tools.market import (
     get_price_history,
 )
 from tools.news import get_recent_news
+from tools.peers import get_peer_comparison
+from tools.xbrl import get_sec_financials
 
 log = logging.getLogger(__name__)
 
@@ -178,6 +180,8 @@ def build_evidence_bundle(
         "get_analyst_estimates": lambda: get_analyst_estimates(ticker),
         "get_recent_news": lambda: get_recent_news(ticker),
         "get_recent_filings": lambda: get_recent_filings(ticker),
+        "get_sec_financials": lambda: get_sec_financials(ticker),
+        "get_peer_comparison": lambda: get_peer_comparison(ticker),
     }
 
     results: dict[str, ToolResult] = {}

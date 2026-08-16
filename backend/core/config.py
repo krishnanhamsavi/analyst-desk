@@ -24,6 +24,12 @@ class Settings(BaseSettings):
     # Leave the key blank to let the SDK resolve it from the environment.
     anthropic_api_key: str = ""
     analyst_model: str = "claude-opus-5"
+    # Bull and Bear default to the analyst model. Pointing them at *different*
+    # models is the only real mitigation for correlated blind spots: two
+    # instances of one model can be confidently wrong in the same direction, and
+    # forcing opposite roles does not make their judgement independent.
+    bull_model: str = ""
+    bear_model: str = ""
     moderator_model: str = "claude-opus-5"
     # Effort controls how much the model thinks and how many tools it reaches
     # for, and it is the largest single cost lever in the system.

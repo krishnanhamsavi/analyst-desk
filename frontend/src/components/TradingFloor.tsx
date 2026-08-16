@@ -22,18 +22,10 @@ const AGENTS = [
   {
     key: 'Bear',
     label: 'The Bear',
-    role: 'Looks for reasons it disappoints',
+    role: 'Looks for reasons it disappoints, and maps what could hurt you',
     accent: 'text-bear',
     ring: 'border-bear/30',
     glow: 'bg-bear',
-  },
-  {
-    key: 'Risk',
-    label: 'Risk Manager',
-    role: 'Ignores direction, maps what could hurt you',
-    accent: 'text-warn',
-    ring: 'border-warn/30',
-    glow: 'bg-warn',
   },
 ]
 
@@ -188,8 +180,8 @@ export function TradingFloor({ events, company, ticker, status }: Props) {
             {ticker && <span className="font-mono text-base text-accent">{ticker}</span>}
           </h1>
           <p className="text-xs text-muted">
-            Three analysts are researching this independently, they can't see each
-            other's work yet. Takes about 5-8 minutes.
+            Two analysts are researching this independently, they cannot see each
+            other's work yet. Takes about 5 minutes.
           </p>
         </div>
         <div className="flex items-center gap-1.5">
@@ -212,7 +204,7 @@ export function TradingFloor({ events, company, ticker, status }: Props) {
         </div>
       </header>
 
-      <div className="grid min-h-0 flex-1 grid-cols-1 gap-3 lg:grid-cols-3">
+      <div className="grid min-h-0 flex-1 grid-cols-1 gap-3 lg:grid-cols-2">
         {AGENTS.map((agent) => (
           <AgentColumn
             key={agent.key}

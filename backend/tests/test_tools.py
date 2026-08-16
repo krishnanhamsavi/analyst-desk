@@ -248,7 +248,11 @@ class TestLiveData:
 
         bundle = build_evidence_bundle("ZZZZFAKE")
         assert bundle.sources == []
-        assert len(bundle.failures) == 6
+        # Every source must fail cleanly, whatever the current tool count is.
+        from tools.bundle import build_evidence_bundle as _b
+
+        assert len(bundle.failures) == len(bundle.results)
+        assert len(bundle.results) >= 6
         assert bundle.evidence_brief()  # still renders, so agents can say "no data"
 
     def test_bundle_assigns_unique_sequential_citation_ids(self):

@@ -29,7 +29,7 @@ from typing import Any
 from agents.debate import run_debate
 from agents.factchecker import apply_verification, run_factchecker
 from agents.moderator import run_moderator
-from agents.research import run_bear, run_bull, run_risk
+from agents.research import run_bear, run_bull
 from agents.schemas import (
     DirectionalThesis,
     RebuttalSet,
@@ -247,9 +247,13 @@ class Orchestrator:
         result.bear = self._attempt(
             "Bear", lambda: run_bear(result.bundle, result.registry, bus, result.user_view), result, bus
         )
-        result.risk = self._attempt(
-            "Risk", lambda: run_risk(result.bundle, result.registry, bus), result, bus
-        )
+        # The risk map arrives inside the Bear's output rather than from a
+        # separate agent. The two overlapped heavily on valuation risk,
+        # fragility and structural threat, so one agent now does both jobs and
+        # the run is a full agent cheaper and faster.
+        result.risk = result.bear.risk_assessment if result.bear else None
+        if result.bear is not None and result.risk is None:
+            result.degraded.append("Bear produced no risk assessment")
 
         if result.bull is None and result.bear is None:
             raise _RunFailed("Both research agents failed; there is no analysis to moderate.")

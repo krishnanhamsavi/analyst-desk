@@ -13,7 +13,7 @@ from __future__ import annotations
 
 from agents.base import Agent
 from agents.briefing import build_briefing, horizon_period
-from agents.schemas import DirectionalThesis, RiskAssessment
+from agents.schemas import DirectionalThesis
 from core.config import settings
 from core.events import EventBus
 from tools.bundle import EvidenceBundle
@@ -26,15 +26,11 @@ BULL_TASK = (
 )
 
 BEAR_TASK = (
-    "Build the strongest honest case that this stock UNDERPERFORMS, or is priced "
-    "for an outcome the evidence does not support, over the stated horizon. Ground "
-    "every claim in the evidence, and be candid about where your case is weakest."
-)
-
-RISK_TASK = (
-    "Map what could go wrong for someone holding this stock, regardless of which "
-    "direction it moves. You are not arguing a side. Ground every risk in the "
-    "evidence, and do not pad the list with generic risks."
+    "Two jobs. First, build the strongest honest case that this stock "
+    "UNDERPERFORMS, or is priced for an outcome the evidence does not support, "
+    "over the stated horizon. Second, separately and without advocacy, fill in "
+    "risk_assessment with what could hurt a holder whichever case turns out to be "
+    "right. Ground every claim in the evidence."
 )
 
 
@@ -63,7 +59,8 @@ def run_bull(
     bus: EventBus,
     user_view: str | None = None,
 ) -> DirectionalThesis:
-    agent = Agent("Bull", "bull", DirectionalThesis, max_tool_calls=6, effort=settings.research_effort)
+    agent = Agent("Bull", "bull", DirectionalThesis, max_tool_calls=6,
+                  model=settings.bull_model or None, effort=settings.research_effort)
     return _run(agent, BULL_TASK, bundle, registry, bus, user_view)  # type: ignore[return-value]
 
 
@@ -75,14 +72,3 @@ def run_bear(
 ) -> DirectionalThesis:
     agent = Agent("Bear", "bear", DirectionalThesis, max_tool_calls=6, effort=settings.research_effort)
     return _run(agent, BEAR_TASK, bundle, registry, bus, user_view)  # type: ignore[return-value]
-
-
-def run_risk(
-    bundle: EvidenceBundle,
-    registry: SourceRegistry,
-    bus: EventBus,
-) -> RiskAssessment:
-    agent = Agent("Risk", "risk", RiskAssessment, max_tool_calls=5, effort=settings.research_effort)
-    # The Risk Manager is deliberately not shown the user's view: an opinion about
-    # direction is exactly the thing a risk assessment must not be anchored to.
-    return _run(agent, RISK_TASK, bundle, registry, bus, None)  # type: ignore[return-value]

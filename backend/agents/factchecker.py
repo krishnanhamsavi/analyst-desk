@@ -34,10 +34,25 @@ def _claims_for_checking(memo: ResearchMemo) -> str:
     return "\n".join(lines)
 
 
-def _source_records(registry: SourceRegistry) -> str:
-    """The raw data, verbatim. No interpretation, no narrative."""
+def _cited_ids(memo: ResearchMemo) -> set[str]:
+    return {
+        (point.evidence_ref or "").strip().upper()
+        for point in (*memo.bull_case, *memo.bear_case)
+        if point.evidence_ref
+    }
+
+
+def _source_records(registry: SourceRegistry, only: set[str] | None = None) -> str:
+    """The raw data, verbatim. No interpretation, no narrative.
+
+    Restricted to the sources the memo actually cites. Sending the whole library
+    made this the most expensive input in the run while adding nothing: a claim
+    can only be checked against the source it points at.
+    """
     blocks = []
     for src in registry.all():
+        if only and src.ref_id not in only:
+            continue
         detail = json.dumps(src.detail, default=str, indent=1)
         blocks.append(
             f"### [{src.ref_id}] {src.label}\n"
@@ -65,8 +80,8 @@ def run_factchecker(
             "## Claims to verify",
             _claims_for_checking(memo),
             "",
-            "## The source records — the only ground truth",
-            _source_records(registry),
+            "## The source records, the only ground truth",
+            _source_records(registry, only=_cited_ids(memo)),
             "",
             "## Your task",
             "Issue one finding per checkable claim. Quote the source figure in each "

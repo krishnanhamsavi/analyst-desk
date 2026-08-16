@@ -33,6 +33,8 @@ from tools.market import (
     get_price_history,
 )
 from tools.news import get_recent_news
+from tools.peers import get_peer_comparison
+from tools.xbrl import get_sec_financials
 
 log = logging.getLogger(__name__)
 
@@ -156,6 +158,29 @@ TOOL_SCHEMAS: list[dict[str, Any]] = [
         },
     },
     {
+        "name": "get_sec_financials",
+        "description": (
+            "Audited financial statements straight from the company's SEC filings "
+            "(XBRL): revenue, gross and operating profit, net income, EPS, assets, "
+            "debt, cash and cash flow, with four years of history and the exact form "
+            "and filing date each figure came from. Prefer these figures over "
+            "market-data fundamentals when the two disagree, because these are what "
+            "the company legally reported."
+        ),
+        "input_schema": {"type": "object", "properties": {}, "required": []},
+    },
+    {
+        "name": "get_peer_comparison",
+        "description": (
+            "How this company's valuation multiples and margins compare with similar "
+            "companies, including the peer median and whether the subject sits above "
+            "or below it. Call this before making ANY claim that a stock is cheap or "
+            "expensive: a multiple means nothing without knowing where comparable "
+            "businesses trade."
+        ),
+        "input_schema": {"type": "object", "properties": {}, "required": []},
+    },
+    {
         "name": "get_recent_filings",
         "description": (
             "SEC EDGAR filings (10-K, 10-Q, 8-K, and 20-F for foreign issuers) with "
@@ -191,6 +216,8 @@ class ToolDispatcher:
                 self.ticker, min(int(a.get("limit") or 10), 20)
             ),
             "get_recent_filings": lambda a: get_recent_filings(self.ticker),
+            "get_sec_financials": lambda a: get_sec_financials(self.ticker),
+            "get_peer_comparison": lambda a: get_peer_comparison(self.ticker),
         }
 
     def run(self, name: str, args: dict[str, Any]) -> tuple[str, ToolResult]:

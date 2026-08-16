@@ -72,6 +72,12 @@ class DirectionalThesis(BaseModel):
         description="Data you wanted but could not retrieve, and how its absence "
         "weakens your argument. Empty list if none.",
     )
+    risk_assessment: "RiskAssessment | None" = Field(
+        default=None,
+        description="Only the Bear fills this in. A direction-agnostic map of what "
+        "could hurt a holder regardless of which case is right. Keep it separate "
+        "from your argument: this section is not advocacy.",
+    )
 
 
 class Rebuttal(BaseModel):

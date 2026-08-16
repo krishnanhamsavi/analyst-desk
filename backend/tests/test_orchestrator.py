@@ -35,8 +35,9 @@ from agents.schemas import (  # noqa: E402
 # ----------------------------------------------------------------- fixtures
 
 
-def a_thesis(text: str = "the case") -> DirectionalThesis:
+def a_thesis(text: str = "the case", with_risk: bool = False) -> DirectionalThesis:
     return DirectionalThesis(
+        risk_assessment=a_risk() if with_risk else None,
         thesis=text,
         supporting_points=[
             Claim(claim="margins improved", evidence_ref="S1", reasoning="r", dimension="profitability")
@@ -123,8 +124,10 @@ def stub_desk(monkeypatch):
                                  "needs_confirmation": False, "candidates": [], "message": "ok"})(),
     )
     monkeypatch.setattr(orch, "run_bull", lambda *a, **k: (calls.append("bull"), a_thesis("bull"))[1])
-    monkeypatch.setattr(orch, "run_bear", lambda *a, **k: (calls.append("bear"), a_thesis("bear"))[1])
-    monkeypatch.setattr(orch, "run_risk", lambda *a, **k: (calls.append("risk"), a_risk())[1])
+    monkeypatch.setattr(
+        orch, "run_bear",
+        lambda *a, **k: (calls.append("bear"), a_thesis("bear", with_risk=True))[1],
+    )
     monkeypatch.setattr(
         orch, "run_debate", lambda *a, **k: (calls.append("debate"), (a_rebuttal(), a_rebuttal()))[1]
     )
@@ -148,7 +151,7 @@ class TestStateMachine:
         result = orch.Orchestrator().run("Test Corp")
         assert result.ok
         assert result.stage is orch.Stage.DONE
-        assert stub_desk == ["gather", "bull", "bear", "risk", "debate", "memo", "verify"]
+        assert stub_desk == ["gather", "bull", "bear", "debate", "memo", "verify"]
 
         stages = [e.data.get("stage") for e in result.events if e.type == "run_stage"]
         assert stages[:1] == ["resolve"]
