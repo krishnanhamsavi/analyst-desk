@@ -1,26 +1,14 @@
 [
   {
-    "run_id": "c35f3e77",
-    "ticker": "KO",
-    "company_name": "The Coca-Cola Company",
-    "horizon": "medium",
-    "confidence": "moderate",
-    "verification_verdict": "significant_issues",
-    "claims_flagged": 8,
-    "created_at": "2026-08-16T18:24:54.074536",
-    "elapsed_s": 395.93,
-    "user_view": null
-  },
-  {
-    "run_id": "8502c5b6",
-    "ticker": "SNDK",
-    "company_name": "Sandisk Corp",
+    "run_id": "d7f3077b",
+    "ticker": "AAPL",
+    "company_name": "Apple Inc.",
     "horizon": "short",
     "confidence": "low",
     "verification_verdict": "significant_issues",
-    "claims_flagged": 6,
-    "created_at": "2026-08-10T17:35:54.962733",
-    "elapsed_s": 491.74,
+    "claims_flagged": 2,
+    "created_at": "2026-08-10T05:25:10.180635",
+    "elapsed_s": 455.95,
     "user_view": null
   },
   {
@@ -48,15 +36,27 @@
     "user_view": null
   },
   {
-    "run_id": "ba0c7980",
-    "ticker": "WDC",
-    "company_name": "Western Digital Corporation",
+    "run_id": "c35f3e77",
+    "ticker": "KO",
+    "company_name": "The Coca-Cola Company",
     "horizon": "medium",
     "confidence": "moderate",
     "verification_verdict": "significant_issues",
-    "claims_flagged": 3,
-    "created_at": "2026-08-16T21:25:50.333021",
-    "elapsed_s": 375.92,
+    "claims_flagged": 8,
+    "created_at": "2026-08-16T18:24:54.074536",
+    "elapsed_s": 395.93,
+    "user_view": null
+  },
+  {
+    "run_id": "8502c5b6",
+    "ticker": "SNDK",
+    "company_name": "Sandisk Corp",
+    "horizon": "short",
+    "confidence": "low",
+    "verification_verdict": "significant_issues",
+    "claims_flagged": 6,
+    "created_at": "2026-08-10T17:35:54.962733",
+    "elapsed_s": 491.74,
     "user_view": null
   }
 ]

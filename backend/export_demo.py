@@ -35,19 +35,38 @@ OUTPUT_DIR = REPO_ROOT / "frontend" / "public" / "demo"
 MAX_REPLAY_SECONDS = 75
 
 
-def _pick_best(limit: int) -> list[str]:
-    """Choose runs that show the product at its most convincing.
+# Companies a visitor recognises without thinking. Ranking purely by flagged
+# claims filled the demo with storage manufacturers: a technically better
+# showcase that nobody clicks. Someone landing cold will try a name they know,
+# and a demo they do not engage with demonstrates nothing.
+_HOUSEHOLD_NAMES = [
+    "AAPL", "NVDA", "TSLA", "MSFT", "GOOGL", "AMZN", "META",
+    "KO", "PEP", "DIS", "NFLX", "JPM", "INTC", "AMD",
+]
 
-    A run where the fact-checker found nothing proves less than one where it
-    caught something, so flagged claims are a feature here, not a defect.
+
+def _pick_best(limit: int) -> list[str]:
+    """Choose runs that a visitor will actually click, and that show the work.
+
+    Two competing goals. A run where the fact-checker caught something proves
+    far more than a clean one, so flagged claims are a feature. But recognition
+    comes first: nobody clicks a ticker they have never heard of.
     """
     candidates = [r for r in db.list_runs(50) if r["stage"] == "done"]
 
+    def rank(row: dict) -> tuple[int, int]:
+        ticker = (row["ticker"] or "").upper()
+        recognisable = (
+            len(_HOUSEHOLD_NAMES) - _HOUSEHOLD_NAMES.index(ticker)
+            if ticker in _HOUSEHOLD_NAMES
+            else 0
+        )
+        return (recognisable, row["claims_flagged"] or 0)
+
     seen_tickers: set[str] = set()
     chosen: list[str] = []
-    # Prefer runs that flagged claims, then spread across different companies so
-    # the demo does not show the same one three times.
-    for row in sorted(candidates, key=lambda r: (-(r["claims_flagged"] or 0))):
+    # One run per company, best first, so the demo is not the same name twice.
+    for row in sorted(candidates, key=rank, reverse=True):
         if row["ticker"] in seen_tickers:
             continue
         seen_tickers.add(row["ticker"])
